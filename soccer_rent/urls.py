@@ -20,13 +20,12 @@ from rest_framework.routers import DefaultRouter
 from booking.views import BookingViewSet
 from fields.views import FieldViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
+from users.views import UserViewSet
 
 router = DefaultRouter()
 router.register(r'fields', FieldViewSet)
 router.register(r'bookings', BookingViewSet)
-
-
+router.register(r'users', UserViewSet)  
 
 urlpatterns = [
     path('admin/', admin.site.urls),
