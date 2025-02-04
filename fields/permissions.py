@@ -11,8 +11,11 @@ class EditIfOwnerOrAdmin(BasePermission):
         GET so'rovlarini barcha foydalanuvchilar uchun ruxsat beradi.
         POST, PUT, DELETE uchun faqat admin yoki owner bo'lishi kerak.
         """
+        if request.user.is_anonymous:
+            return False  # Agar foydalanuvchi anonim bo‘lsa, ruxsat yo‘q
+        
         if request.method == 'GET':
-            return True  # GET so'rovlari uchun hech qanday cheklov yo'q
+            return True  
         if request.user.role in ['admin', 'owner']:
             return True  # POST, PUT, DELETE uchun faqat admin yoki owner bo'lishi kerak
 
@@ -24,6 +27,10 @@ class EditIfOwnerOrAdmin(BasePermission):
         admin har qanday fieldni o'zgartirishi yoki o'chirishi mumkin,
         owner faqat o'ziga tegishli fieldni o'zgartirishi yoki o'chirishi mumkin.
         """
+        
+        if request.user.is_anonymous:
+            return False  
+        
         if request.method == 'GET':
             return True
         

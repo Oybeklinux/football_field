@@ -1,9 +1,16 @@
 # from django.contrib.gis.db.models.functions import Distance
 # from django.contrib.gis.geos import Point
 from rest_framework import viewsets
+
+from booking.models import Booking
 from .models import Field
 from .serializers import FieldSerializer
 from .permissions import EditIfOwnerOrAdmin
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
+from django.db.models import Q
+from django.db.models import Case, When, Value
+from django.db.models import Sum, BooleanField
 
 # Maydonlar API
 class FieldViewSet(viewsets.ModelViewSet):
@@ -11,20 +18,55 @@ class FieldViewSet(viewsets.ModelViewSet):
     serializer_class = FieldSerializer
     permission_classes = [EditIfOwnerOrAdmin] 
 
-    # def get_queryset(self):
-    #     queryset = Field.objects.all()
-    #     # latitude = self.request.query_params.get('latitude')
-    #     # longitude = self.request.query_params.get('longitude')
-    #     start_time = self.request.query_params.get('start_time')
-    #     end_time = self.request.query_params.get('end_time')
+    def get_queryset(self):
+        queryset = Field.objects.all()
 
-    #     # # Eng yaqin maydonlar bo'yicha filterlash
-    #     # if latitude and longitude:
-    #     #     user_location = Point(float(longitude), float(latitude), srid=4326)
-    #     #     queryset = queryset.annotate(distance=Distance('location', user_location)).order_by('distance')
+        # Foydalanuvchi admin yoki owner bo'lsa, barcha maydonlarni ko'rsin
+        if self.request.user.role in ['admin', 'owner']:
+            return queryset
 
-    #     # Bron qilinmagan maydonlarni filterlash
-    #     if start_time and end_time:
-    #         queryset = queryset.exclude(bookings__start_time__lt=end_time, bookings__end_time__gt=start_time)
+        
+        # Vaqt filteri
+        start_time = self.request.query_params.get("start_time")
+        end_time = self.request.query_params.get("end_time")
+        if start_time and end_time:
+            start_time = parse_datetime(start_time)
+            end_time = parse_datetime(end_time)
+            if start_time and end_time:
+                start_time = make_aware(start_time)
+                end_time = make_aware(end_time)
+                
+                not_ordered_fields = queryset.filter(
+                    Q(bookings__isnull=True) 
+                ).distinct()
+                
+                
+                subquery = Booking.objects.annotate(
+                    sign=Case(
+                        When(
+                            start_time__lte=start_time, end_time__gte=end_time, 
+                            then=Value(1)
+                        ),
+                        When(
+                            start_time__lte=start_time, end_time__gte=end_time,
+                            then=Value(1)
+                        ),
+                        default=Value(0),
+                        output_field=BooleanField()
+                    )
+                ).values('field_id').annotate(
+                    sum_sign=Sum('sign')
+                ).filter(sum_sign=0).values('field_id')
+                
+                fields_queryset = Field.objects.filter(id__in=subquery)
+                queryset = fields_queryset.union(not_ordered_fields)
 
-    #     return queryset
+        # Lokatsiya bo‘yicha tartiblash
+        # lat = self.request.query_params.get("lat")
+        # lon = self.request.query_params.get("lon")
+
+        # if lat and lon:
+            # user_location = Point(float(lon), float(lat), srid=4326)  # GPS koordinatalari
+            # queryset = queryset.annotate(distance=Distance("location", user_location)).order_by("distance")
+
+        return queryset

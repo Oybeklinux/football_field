@@ -11,22 +11,22 @@ class BookingPermission(BasePermission):
         """Foydalanuvchi tizimga kirganligini tekshiramiz"""
         if not request.user or request.user.is_anonymous:
             return False  # Agar foydalanuvchi anonim bo‘lsa, ruxsat yo‘q
-        print("== 1 ==")
+        
         if request.user.role == 'admin':
             return True
         
-        print("== 2 ==")
+        
         # POST, PUT, PATCH, DELETE so‘rovlari faqat admin uchun ruxsat etilgan
         if request.method in ['GET', 'DELETE'] and request.user.role == 'owner':
             return True
-        print("== 3 ==")
+        
         return False  # Oddiy userlar hech narsa qila olmaydi
 
     def has_object_permission(self, request, view, obj):
         """Obyekt bo‘yicha ruxsatlarni tekshiramiz"""
         if not request.user or request.user.is_anonymous:
             return False  # Agar foydalanuvchi anonim bo‘lsa, ruxsat yo‘q
-        print("== 4 ==")
+        
         if request.user.role == 'admin':
             return True  # Admin barcha bookinglarni boshqara oladi
 

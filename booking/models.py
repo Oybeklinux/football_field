@@ -8,6 +8,7 @@ class Booking(models.Model):
     field = models.ForeignKey(Field, on_delete=models.CASCADE, related_name="bookings")
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+   
 
     def __str__(self):
         return f"{self.user.username} - {self.field.name}"
