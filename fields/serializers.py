@@ -4,10 +4,11 @@ from users.models import User
 
 class FieldSerializer(serializers.ModelSerializer):
     owner = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), required=False)
-
+    distance = serializers.FloatField(read_only=True, required=False) 
+    
     class Meta:
         model = Field
-        fields = '__all__'  # 'owner' maydoni bu yerda ko'rsatiladi
+        fields = ['id', 'name', 'lat', 'long', 'distance', 'owner']
 
     def create(self, validated_data):
         """
